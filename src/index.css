@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --color-gold-50: #fbf7ee;
+  --color-gold-100: #f5edd7;
+  --color-gold-200: #ebd8af;
+  --color-gold-300: #dfbe81;
+  --color-gold-400: #d3a154;
+  --color-gold-500: #c5a880; /* Elegant champagne muted gold */
+  --color-gold-accent: #d4af37; /* Brighter gold for highlights */
+  --color-gold-600: #b08c2a;
+  --color-gold-700: #8c6a1b;
+  --color-gold-800: #684910;
+  --color-gold-900: #4a330a;
+  
+  --color-luxury-black: #050505;
+  --color-luxury-dark: #0a0a0a;
+  --color-luxury-gray: #121212;
+  --color-luxury-light-gray: #1a1a1a;
+  --color-luxury-muted: #888888;
+}
+
+/* Base scrollbar styling as a luxury element */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #F5F5F5;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #0A0A0A;
+  color: #F5F5F5;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #0A0A0A;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism custom classes */
+.glass-premium {
+  background: rgba(26, 26, 26, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-premium-accent {
+  background: rgba(212, 175, 55, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+}
+
+/* Text glow */
+.text-gold-glow {
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+}
+
+.box-gold-glow {
+  box-shadow: 0 4px 30px rgba(212, 175, 55, 0.05);
+}
+
+.box-gold-glow-hover:hover {
+  box-shadow: 0 10px 40px rgba(212, 175, 55, 0.15);
+}

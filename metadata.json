@@ -1,0 +1,6 @@
+{
+  "name": "Aurelia - Luxury Fine Dining",
+  "description": "An ultra-premium, multi-sensory modern luxury fine dining restaurant website with exquisite minimalist dark design, gold accents, and a fluid online reservation system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
