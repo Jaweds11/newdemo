@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as CalendarIcon, Clock, Users, Shield, Ticket, X, Check, Eye, Trash2 } from 'lucide-react';
 import { Reservation } from '../types';
+import { sendGmailMessage } from '../lib/gmail';
 
 export default function Reservations() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [showReceipt, setShowReceipt] = useState<Reservation | null>(null);
   const [loading, setLoading] = useState(false);
   const [showMyReservations, setShowMyReservations] = useState(false);
+  const [reportSending, setReportSending] = useState(false);
+  const [reportResult, setReportResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Form Fields
   const [name, setName] = useState('');
@@ -49,6 +52,204 @@ export default function Reservations() {
     localStorage.setItem('aurelia_reservations', JSON.stringify(updated));
   };
 
+  const triggerGmailConfirmation = async (booking: Reservation) => {
+    const token = localStorage.getItem('aurelia_gmail_token');
+    const autoSendSetting = localStorage.getItem('aurelia_gmail_auto_send') !== 'false';
+    
+    if (token) {
+      // 1. Send guest confirmation if active and email exists
+      if (autoSendSetting && booking.email) {
+        try {
+          const rawSubject = localStorage.getItem('aurelia_gmail_template_subject') || 'Your Culinary Reservation Confirmed: [Code]';
+          const rawBody = localStorage.getItem('aurelia_gmail_template_body') || `
+            Dear [Name],<br/><br/>
+            We are delighted to confirm your upcoming reservation at <strong>Aurelia (L'Elégance)</strong>.<br/><br/>
+            <strong>Details of Your Culinary Journey:</strong><br/>
+            <ul>
+              <li><strong>Reference Confirmation Code:</strong> <span style="color:#D4AF37; font-weight:bold;">[Code]</span></li>
+              <li><strong>Date:</strong> [Date]</li>
+              <li><strong>Preferred Seating Hour:</strong> [Time]</li>
+              <li><strong>Guest Count:</strong> [Guests] Guests</li>
+            </ul><br/>
+            Warm regards,<br/>The Concierge at Aurelia
+          `;
+
+          const personalize = (text: string) => {
+            return text
+              .replace(/\[Name\]/g, booking.name)
+              .replace(/\[Code\]/g, booking.confirmationCode)
+              .replace(/\[Date\]/g, booking.date)
+              .replace(/\[Time\]/g, booking.time)
+              .replace(/\[Guests\]/g, String(booking.guests));
+          };
+
+          const subject = personalize(rawSubject);
+          const htmlBody = personalize(rawBody);
+
+          await sendGmailMessage(token, booking.email, subject, htmlBody);
+          console.log(`Automated confirmation email successfully dispatched to ${booking.email}`);
+        } catch (err) {
+          console.error('Failed to dispatch automated confirmation email via connected Gmail account:', err);
+        }
+      }
+
+      // 2. ALWAYS dispatch details to the restaurant owner at 7411jawed@gmail.com
+      try {
+        const ownerEmail = '7411jawed@gmail.com';
+        const ownerSubject = `[Aurelia Booking] ${booking.name} Seating Order Verified ([Code])`;
+        const ownerBody = `
+          <div style="font-family: sans-serif; background-color: #0c0c0c; color: #f5f5f5; padding: 30px; border: 1px solid #D4AF37; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+            <div style="text-align: center; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 20px; margin-bottom: 20px;">
+              <span style="color: #D4AF37; font-family: monospace; font-size: 10px; letter-spacing: 3px; text-transform: uppercase;">Aurelia Restaurant Concierge Inbox</span>
+              <h2 style="font-family: serif; color: #ffffff; font-weight: 300; margin-top: 5px; margin-bottom: 0; font-size: 20px;">New Reservation Booked</h2>
+            </div>
+            
+            <p style="font-size: 13px; color: #cccccc; margin-bottom: 20px;">
+              A brand new premium dining coordinate assignment has been created under your Gmail workspace connection:
+            </p>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #dddddd; text-align: left;">
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 0; color: #D4AF37; font-family: monospace; width: 40%">PATRON NAME:</td>
+                <td style="padding: 10px 0; font-weight: bold; color: #ffffff">${booking.name}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 0; color: #D4AF37; font-family: monospace;">CONFIRM KEY:</td>
+                <td style="padding: 10px 0; font-weight: bold; color: #D4AF37;">${booking.confirmationCode}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 0; color: #D4AF37; font-family: monospace;">EMAIL PATH:</td>
+                <td style="padding: 10px 0;"><a href="mailto:${booking.email}" style="color: #D4AF37; text-decoration: none;">${booking.email}</a></td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 0; color: #D4AF37; font-family: monospace;">PHONE:</td>
+                <td style="padding: 10px 0; color: #ffffff;">${booking.phone}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 0; color: #D4AF37; font-family: monospace;">CALENDAR DATE:</td>
+                <td style="padding: 10px 0; color: #ffffff;">${booking.date}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 0; color: #D4AF37; font-family: monospace;">SEATING TIME:</td>
+                <td style="padding: 10px 0; color: #ffffff;">${booking.time}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 0; color: #D4AF37; font-family: monospace;">GUEST VOLUME:</td>
+                <td style="padding: 10px 0; color: #ffffff;">${booking.guests} Guests</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 10px 0; color: #D4AF37; font-family: monospace;">SALON AREA:</td>
+                <td style="padding: 10px 0; color: #ffffff; text-transform: capitalize;">${booking.tableType}</td>
+              </tr>
+              ${booking.specialRequests ? `
+              <tr>
+                <td colspan="2" style="padding: 15px 0 0 0;">
+                  <span style="color: #D4AF37; font-family: monospace; display: block; margin-bottom: 5px;">SPECIAL MEMORANDUMS:</span>
+                  <p style="font-style: italic; color: #aaaaaa; margin: 0; background-color: rgba(255,255,255,0.02); padding: 10px; border-left: 2px solid #D4AF37;">&ldquo;${booking.specialRequests}&rdquo;</p>
+                </td>
+              </tr>` : ''}
+            </table>
+            
+            <div style="margin-top: 30px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px;">
+              <p style="font-size: 10px; color: #666666; margin: 0; font-family: monospace;">Automated routing alert delivered via your OAuth credential link.</p>
+            </div>
+          </div>
+        `;
+
+        await sendGmailMessage(token, ownerEmail, ownerSubject, ownerBody);
+        console.log(`Alert copy of reservation details dispatched to owner at ${ownerEmail}`);
+      } catch (adminErr) {
+        console.error('Failed to dispatch booking notification alert copy to owner:', adminErr);
+      }
+    }
+  };
+
+  const emailReservationsReport = async () => {
+    const token = localStorage.getItem('aurelia_gmail_token');
+    if (!token) {
+      setReportResult({
+        type: 'error',
+        text: 'Google account is not linked. Please connect your Gmail under the "Gmail" tab first.'
+      });
+      return;
+    }
+
+    setReportSending(true);
+    setReportResult(null);
+
+    try {
+      const recipient = '7411jawed@gmail.com';
+      const subject = `Aurelia Active Reservation Logs (${reservations.length} Bookings) - Manifest Report`;
+      
+      let rowsHtml = '';
+      reservations.forEach((res) => {
+        rowsHtml += `
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <td style="padding: 12px 10px; color: #ffffff; font-weight: bold;">${res.name}</td>
+            <td style="padding: 12px 10px; color: #D4AF37; font-family: monospace;">${res.confirmationCode}</td>
+            <td style="padding: 12px 10px;">${res.date} at ${res.time}</td>
+            <td style="padding: 12px 10px;">${res.guests} Pax</td>
+            <td style="padding: 12px 10px; text-transform: capitalize; color: #D4AF37;">${res.tableType}</td>
+            <td style="padding: 12px 10px; font-size: 11px;">
+              <div>${res.email}</div>
+              <div style="color: #888;">${res.phone}</div>
+            </td>
+            <td style="padding: 12px 10px; font-style: italic; color: #aaa; font-size: 11px;">${res.specialRequests || '-'}</td>
+          </tr>
+        `;
+      });
+
+      const bodyHtml = `
+        <div style="font-family: sans-serif; background-color: #0c0c0c; color: #f5f5f5; padding: 30px; border: 1px solid #D4AF37; max-width: 900px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.6);">
+          <div style="text-align: center; border-bottom: 1px solid rgba(212, 175, 55, 0.25); padding-bottom: 25px; margin-bottom: 25px;">
+            <span style="color: #D4AF37; font-family: monospace; font-size: 10px; letter-spacing: 4px; text-transform: uppercase; display: block; margin-bottom: 5px;">Aurelia Restaurant - Grand Salon Lounge</span>
+            <h2 style="font-family: serif; color: #ffffff; font-weight: 300; margin: 0; font-size: 24px;">Active Seating Manifest</h2>
+          </div>
+
+          <p style="font-size: 13px; color: #cccccc; margin-bottom: 20px; line-height: 1.6;">
+            The connected Concierge workspace database has registered a total of <strong>${reservations.length} active booking(s)</strong>. Here is the compiled seating master log:
+          </p>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: #dddddd; text-align: left; border: 1px solid rgba(212,175,55,0.1);">
+            <thead>
+              <tr style="background-color: rgba(212, 175, 55, 0.1); border-bottom: 2px solid #D4AF37; color: #D4AF37; font-family: monospace; text-transform: uppercase;">
+                <th style="padding: 10px;">Patron</th>
+                <th style="padding: 10px;">Confirm Code</th>
+                <th style="padding: 10px;">Schedule</th>
+                <th style="padding: 10px;">Pax</th>
+                <th style="padding: 10px;">Salon Coordinate</th>
+                <th style="padding: 10px;">Communication</th>
+                <th style="padding: 10px;">Memorandum</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml || '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #666; font-style: italic;">No active table reservations registered.</td></tr>'}
+            </tbody>
+          </table>
+
+          <div style="margin-top: 40px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px; color: #666666; font-size: 10px; font-family: monospace;">
+            <p style="margin: 0 0 5px 0;">This report was dispatched from user session client at local timestamp: ${new Date().toLocaleString()}</p>
+            <p style="margin: 0;">Aurelia Digital Maitre'D Communications Dashboard</p>
+          </div>
+        </div>
+      `;
+
+      await sendGmailMessage(token, recipient, subject, bodyHtml);
+      setReportResult({
+        type: 'success',
+        text: `The active manifest list has been compiled and emailed successfully to your Gmail: ${recipient}`
+      });
+      setTimeout(() => setReportResult(null), 8000);
+    } catch (e: any) {
+      setReportResult({
+        type: 'error',
+        text: `Failed to dispatch report copy: ${e?.message || 'Unexpected API dispatch error.'}`
+      });
+    } finally {
+      setReportSending(false);
+    }
+  };
+
   const handleBook = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !phone || !date || !time) return;
@@ -74,6 +275,10 @@ export default function Reservations() {
 
       const updated = [newBooking, ...reservations];
       saveReservations(updated);
+      
+      // Auto-trigger Gmail confirmation mail if connected
+      triggerGmailConfirmation(newBooking);
+
       setShowReceipt(newBooking);
       setLoading(false);
 
@@ -154,6 +359,38 @@ export default function Reservations() {
                   Close
                 </button>
               </div>
+
+              {/* Owner Gmail Manifest Report Dispatch Bar */}
+              <div id="manifest-report-dispatch" className="mb-6 bg-gold-900/10 border border-gold-accent/20 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-left">
+                <div>
+                  <h4 className="font-serif text-[12px] text-white tracking-wide">Deliver Seating Manifest to Gmail</h4>
+                  <p className="text-[10px] text-gold-100/50 mt-0.5 font-sans font-light">
+                    Dispatch the complete list of all active seating voucher arrangements directly to your restaurant inbox: <strong className="text-gold-accent">7411jawed@gmail.com</strong>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={emailReservationsReport}
+                  disabled={reportSending || reservations.length === 0}
+                  className="px-4 py-2 bg-[#D4AF37] hover:bg-[#b8952d] text-luxury-black font-semibold text-[10px] uppercase tracking-widest transition-all cursor-pointer disabled:opacity-40 whitespace-nowrap rounded-none font-mono"
+                >
+                  {reportSending ? 'Compiling & Sending...' : 'Dispatch List Report'}
+                </button>
+              </div>
+
+              {/* Status Report Result Alerts */}
+              <AnimatePresence>
+                {reportResult && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={`p-3.5 mb-6 text-[11px] border font-sans text-left ${reportResult.type === 'success' ? 'bg-gold-accent/10 border-gold-accent/40 text-gold-accent' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}
+                  >
+                    {reportResult.text}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {reservations.length === 0 ? (
                 <p className="text-center text-gold-50/40 py-8 italic">No registered seating arrangements discovered.</p>

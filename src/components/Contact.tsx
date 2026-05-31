@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Phone, Mail, Clock, MapPin, Compass, Send, Check } from 'lucide-react';
+import { sendGmailMessage } from '../lib/gmail';
 
 export default function Contact() {
   const [success, setSuccess] = useState(false);
@@ -11,14 +12,48 @@ export default function Contact() {
     message: '',
   });
 
+  const triggerGmailInquiryAlert = async (name: string, guestEmail: string, enquiry: string) => {
+    const token = localStorage.getItem('aurelia_gmail_token');
+    if (!token || !guestEmail) return;
+
+    try {
+      const subject = `Enquiry Received: Aurelia Grand Salon Concierge`;
+      const htmlBody = `
+        Dear ${name},<br/><br/>
+        We have successfully registered your enquiry regarding: <br/>
+        <blockquote style="border-left: 2px solid #D4AF37; padding-left: 10px; margin: 10px 0; color: #888; font-style: italic;">
+          "${enquiry}"
+        </blockquote><br/>
+        Our Maître D' or Sommelier Concierge will review your request and reach out to you within 24 business hours.<br/><br/>
+        Warm regards,<br/>
+        <em>The Concierge at Aurelia</em>
+      `;
+
+      await sendGmailMessage(token, guestEmail, subject, htmlBody);
+      console.log(`Automated inquiry confirmation dispatched to ${guestEmail}`);
+    } catch (err) {
+      console.error('Failed to dispatch inquiry mail:', err);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.message) return;
 
     setLoading(true);
+    
+    // Store variables before clean
+    const currentName = formData.name;
+    const currentEmail = formData.email;
+    const currentMessage = formData.message;
+
     setTimeout(() => {
       setLoading(false);
       setSuccess(true);
+      
+      // Send auto-acknowledgement via Gmail if linked
+      triggerGmailInquiryAlert(currentName, currentEmail, currentMessage);
+
       setFormData({ name: '', email: '', message: '' });
       setTimeout(() => setSuccess(false), 5000);
     }, 1200);

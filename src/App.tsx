@@ -7,6 +7,7 @@ import WhyChooseUs from './components/WhyChooseUs';
 import Gallery from './components/Gallery';
 import Reviews from './components/Reviews';
 import Reservations from './components/Reservations';
+import GmailHub from './components/GmailHub';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 
@@ -32,7 +33,7 @@ export default function App() {
 
   // Intersection Observer to update active section automatically on scroll
   useEffect(() => {
-    const sections = ['home', 'about', 'menu', 'why-us', 'gallery', 'reviews', 'reservations', 'contact'];
+    const sections = ['home', 'about', 'menu', 'why-us', 'gallery', 'reviews', 'reservations', 'gmail-hub', 'contact'];
     
     const observers = sections.map((id) => {
       const element = document.getElementById(id);
@@ -105,6 +106,9 @@ export default function App() {
 
         {/* Table Seating Booking Engine Receipt Drawer */}
         <Reservations />
+
+        {/* Gmail Workspace Integration Dashboard */}
+        <GmailHub />
 
         {/* Location facts & Inquiry form with custom vector Map view */}
         <Contact />

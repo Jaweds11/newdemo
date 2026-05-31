@@ -19,6 +19,7 @@ export default function Navbar({ activeSection, onNavigate }: NavbarProps) {
     { name: 'Gallery', id: 'gallery' },
     { name: 'Reviews', id: 'reviews' },
     { name: 'Reservations', id: 'reservations' },
+    { name: 'Gmail', id: 'gmail-hub' },
     { name: 'Contact', id: 'contact' },
   ];
 

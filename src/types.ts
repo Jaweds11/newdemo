@@ -39,3 +39,24 @@ export interface Reservation {
   confirmationCode: string;
   status: 'confirmed' | 'pending';
 }
+
+export interface GmailMessage {
+  id: string;
+  threadId: string;
+  subject: string;
+  from: string;
+  to: string;
+  date: string;
+  snippet: string;
+  body: string;
+  messageId?: string;
+}
+
+export interface GmailConfig {
+  clientId: string;
+  accessToken: string | null;
+  expiryTime: number | null;
+  userEmail: string | null;
+  userName: string | null;
+}
+
